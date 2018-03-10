@@ -1,0 +1,767 @@
+/*
+* Copyright 2011 CISIAD, UNED, Spain
+*
+* Licensed under the European Union Public Licence, version 1.1 (EUPL)
+*
+* Unless required by applicable law, this code is distributed
+* on an "AS IS" basis, WITHOUT WARRANTIES OF ANY KIND.
+*/
+
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+
+/*
+ * InteractiveLearningGUI.java
+ *
+ * Created on 08-may-2011, 12:30:57
+ */
+
+package org.openmarkov.learning.gui.interactive;
+
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+import javax.swing.DefaultListCellRenderer;
+import javax.swing.JComboBox;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.ListCellRenderer;
+import javax.swing.ListSelectionModel;
+import javax.swing.event.UndoableEditEvent;
+
+import org.openmarkov.core.action.BaseLinkEdit;
+import org.openmarkov.core.action.PNEdit;
+import org.openmarkov.core.action.PNUndoableEditListener;
+import org.openmarkov.core.exception.CanNotDoEditException;
+import org.openmarkov.core.exception.ConstraintViolationException;
+import org.openmarkov.core.exception.NonProjectablePotentialException;
+import org.openmarkov.core.exception.NormalizeNullVectorException;
+import org.openmarkov.core.exception.NotEvaluableNetworkException;
+import org.openmarkov.core.exception.ProbNodeNotFoundException;
+import org.openmarkov.core.exception.WrongCriterionException;
+import org.openmarkov.core.gui.action.MoveNodeEdit;
+import org.openmarkov.core.gui.localize.StringDatabase;
+import org.openmarkov.core.gui.window.edition.LearningPanel;
+import org.openmarkov.core.inference.InferenceAlgorithm;
+import org.openmarkov.core.model.network.EvidenceCase;
+import org.openmarkov.core.model.network.Variable;
+import org.openmarkov.core.model.network.type.BayesianNetworkType;
+import org.openmarkov.learning.core.LearningManager;
+import org.openmarkov.learning.core.util.LearningEditMotivation;
+import org.openmarkov.learning.core.util.LearningEditProposal;
+import org.openmarkov.learning.core.util.ScoreEditMotivation;
+import org.openmarkov.learning.gui.interactive.EditProposalTable.EditSelectionListener;
+import org.openmarkov.learning.gui.interactive.EditProposalTable.EditionEvent;
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.ChartPanel;
+import org.jfree.chart.JFreeChart;
+import org.jfree.chart.axis.NumberAxis;
+import org.jfree.chart.axis.NumberTickUnit;
+import org.jfree.chart.axis.ValueAxis;
+import org.jfree.chart.labels.StandardXYToolTipGenerator;
+import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.chart.plot.XYPlot;
+import org.jfree.chart.renderer.xy.StandardXYItemRenderer;
+import org.jfree.chart.renderer.xy.XYItemRenderer;
+import org.jfree.data.xy.DefaultXYDataset;
+import org.jfree.data.xy.XYDataset;
+import org.jfree.data.xy.XYSeries;
+import org.jfree.data.xy.XYSeriesCollection;
+
+/**
+ *
+ * @author Inigo
+ */
+@SuppressWarnings("serial")
+public class InteractiveLearningDialog extends javax.swing.JDialog implements EditSelectionListener, PNUndoableEditListener {
+	
+    public static int SHOWING_EDIT_NUM = 8;
+	private LearningPanel learningPanel;
+	private XYSeries classificationResultsHistory;
+	private JList objectiveFunctionsPanel;
+	protected Variable testVariable;
+	protected Double testThreshold;
+	protected int objFn;
+	private XYSeries metricHistory;
+
+    /** Creates new form InteractiveLearningGUI 
+     * @param learningPanel */
+    public InteractiveLearningDialog(JFrame parent, boolean modal, LearningManager learningManager, LearningPanel learningPanel) {
+        super(parent, modal);
+        this.learningManager = learningManager;
+        this.learningManager.getLearnedNet().getPNESupport().setWithUndo(true);
+        this.learningManager.getLearnedNet().getPNESupport().addUndoableEditListener(this);
+        this.learningPanel = learningPanel;
+        this.classificationResultsHistory = new XYSeries("Classification Accuracy");
+        this.metricHistory = new XYSeries("Network Metric");
+        editionsTable = new EditProposalTable();
+        editionsTable.addEditSelectionListener(this);
+        initComponents();
+        jScrollPane1.setViewportView(editionsTable);
+		updateEditionsTable(onlyAllowed, onlyPositive, learningManager.getBlockedEdits());	
+        this.setLocation (parent.getLocationOnScreen ().x
+                                  + parent.getSize ().width
+                                  - this.getSize ().width,
+                          140 + parent.getLocationOnScreen ().y);
+        //	this.blockedEditDialog = new BlockedEditDialog(this, false);
+    	
+    }
+
+    /** This method is called from within the constructor to
+     * initialize the form.
+     * WARNING: Do NOT modify this code. The content of this method is
+     * always regenerated by the Form Editor.
+     */
+    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
+    private void initComponents() {
+    	
+    	generalTabbedPane = new javax.swing.JTabbedPane();
+    	editionTablePanel = new javax.swing.JPanel();
+    	lookaheadPanel = new javax.swing.JPanel();
+        btnEdit = new javax.swing.JButton();
+        btnUndo = new javax.swing.JButton();
+        chkOnlyAllowedEdits = new javax.swing.JCheckBox();
+        chkOnlyPositiveEdits = new javax.swing.JCheckBox();
+        jScrollPane1 = new javax.swing.JScrollPane();
+        jScrollPane2 = new javax.swing.JScrollPane();
+        jTable1 = new javax.swing.JTable();
+        btnRedo = new javax.swing.JButton();
+        btnBlockEdit = new javax.swing.JButton();
+        btnShowBlocked = new javax.swing.JButton();
+        lblScore = new javax.swing.JLabel();
+        btnRun = new javax.swing.JButton();
+        btnNextPhase = new javax.swing.JButton();
+                
+        // Test Variable Selection
+        JComboBox<Variable> testVariableComboBox = new JComboBox<Variable>();
+        for (Variable var : learningManager.getLearnedNet().getVariables()) {
+        	testVariableComboBox.addItem(var);
+        }
+        testVariable = testVariableComboBox.getItemAt(0);
+        testVariableComboBox.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+            	testVariable = (Variable) ((JComboBox<?>) evt.getSource()).getSelectedItem();
+            }
+        });
+        JPanel testVariablePanel = new JPanel();
+        testVariablePanel.add(new JLabel("Test Variable:"));
+        testVariablePanel.add(testVariableComboBox);
+        
+        // Test threshold Selection
+        JComboBox<Double> testThresholdComboBox = new JComboBox<Double>();
+        testThresholdComboBox.setRenderer(new DefaultListCellRenderer() {
+
+        	  private final DecimalFormat FORMAT = new DecimalFormat("#.00");
+
+        	     @Override
+        	     public Component getListCellRendererComponent(JList list,
+        	               Object value,
+        	               int index,
+        	               boolean isSelected,
+        	               boolean cellHasFocus)
+        	     {
+        	          super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+        	          
+        	          String text = FORMAT.format(value);
+        	          setText(text);
+
+        	          return this;
+        	     }
+        });
+        
+        for (int i=1; i<11; i++) {
+        	testThresholdComboBox.addItem(i*0.1);
+        }
+        testThreshold = testThresholdComboBox.getItemAt(5);
+        testThresholdComboBox.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+            	testThreshold = (Double) ((JComboBox<?>) evt.getSource()).getSelectedItem();
+            }
+        });
+        JPanel testThresholdPanel = new JPanel();
+        testThresholdPanel.add(new JLabel("Classification threshold:"));
+        testThresholdPanel.add(testThresholdComboBox);
+ 
+//        // Objective function
+//        String[] objFnStrings = {"Classification Rate", "Metric"};
+//
+//        JComboBox<String> objectiveFunctionsComboBox = new JComboBox<String>(objFnStrings);
+//        objectiveFunctionsComboBox.addActionListener(new java.awt.event.ActionListener() {
+//            public void actionPerformed(java.awt.event.ActionEvent evt) {
+//            	int objFnNew = objectiveFunctionsComboBox.getSelectedIndex();
+//            	if (objFnNew != objFn) {
+//            		classificationResultsHistory.clear();
+//            	}
+//            	objFn = objFnNew;
+//            	if (objFn == 1) {
+//            		testThresholdComboBox.setEnabled(false);
+//            		testVariableComboBox.setEnabled(false);
+//            	} else {
+//            		testThresholdComboBox.setEnabled(true);
+//            		testVariableComboBox.setEnabled(true);           		
+//            	}
+//            	
+//            }
+//        });
+//        JPanel objectiveFunctionsPanel = new JPanel();
+//        objectiveFunctionsPanel.add(new JLabel("Objective:"));
+//        objectiveFunctionsPanel.add(objectiveFunctionsComboBox);
+        
+        setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
+        setTitle("Interactive Graph Learning");
+        setResizable(true);
+        setMinimumSize(new Dimension(370, 300));
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            public void windowClosing(java.awt.event.WindowEvent evt) {
+                formWindowClosing(evt);
+            }
+        });
+
+        btnEdit.setText(stringDatabase.getString ("Learning.Interactive.ApplyEdit"));
+        btnEdit.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnEditActionPerformed(evt);
+            }
+        });
+
+        btnUndo.setText(stringDatabase.getString ("Learning.Interactive.Undo"));
+        btnUndo.setEnabled(false);
+        btnUndo.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnUndoActionPerformed(evt);
+            }
+        });
+
+        chkOnlyAllowedEdits.setSelected(true);
+        chkOnlyAllowedEdits.setText(stringDatabase.getString ("Learning.Interactive.OnlyAllowedEdits"));
+        chkOnlyAllowedEdits.addChangeListener(new javax.swing.event.ChangeListener() {
+            public void stateChanged(javax.swing.event.ChangeEvent evt) {
+                chkOnlyAllowedEditsStateChanged(evt);
+            }
+        });
+
+        chkOnlyPositiveEdits.setSelected(true);
+        chkOnlyPositiveEdits.setText(stringDatabase.getString ("Learning.Interactive.OnlyPositiveEdits"));
+        chkOnlyPositiveEdits.addChangeListener(new javax.swing.event.ChangeListener() {
+            public void stateChanged(javax.swing.event.ChangeEvent evt) {
+                chkOnlyPositiveEditsStateChanged(evt);
+            }
+        });
+
+        jTable1.setModel(new javax.swing.table.DefaultTableModel(
+            new Object [][] {
+                {null, null, null, null},
+                {null, null, null, null},
+                {null, null, null, null},
+                {null, null, null, null}
+            },
+            new String [] {
+                "Title 1", "Title 2", "Title 3", "Title 4"
+            }
+        ));
+        jScrollPane1.setViewportView(jTable1);
+
+        btnRedo.setText(stringDatabase.getString ("Learning.Interactive.Redo"));
+        btnRedo.setEnabled(false);
+        btnRedo.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnRedoActionPerformed(evt);
+            }
+        });
+
+        btnBlockEdit.setText(stringDatabase.getString ("Learning.Interactive.BlockEdit"));
+        btnBlockEdit.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnBlockEditActionPerformed(evt);
+            }
+        });
+
+        btnShowBlocked.setText(stringDatabase.getString ("Learning.Interactive.ShowBlocked"));
+        btnShowBlocked.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnShowBlockedActionPerformed(evt);
+            }
+        });
+
+        lblScore.setText(stringDatabase.getString ("Learning.Interactive.Score") + ": ");
+        lblScore.setVisible (false);
+
+        btnRun.setText(stringDatabase.getString ("Learning.Interactive.Run"));
+        btnRun.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnRunActionPerformed(evt);
+            }
+        });
+        btnRun.setToolTipText (stringDatabase.getString ("Learning.Interactive.Run.ToolTip"));
+
+        btnNextPhase.setText(stringDatabase.getString ("Learning.Interactive.NextPhase"));
+        btnNextPhase.setToolTipText("");
+        btnNextPhase.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnNextPhaseActionPerformed(evt);
+            }
+        });
+        
+        btnNextPhase.setToolTipText (stringDatabase.getString ("Learning.Interactive.NextPhase.ToolTip"));
+        
+        org.jdesktop.layout.GroupLayout layout = new org.jdesktop.layout.GroupLayout(getContentPane());
+        getContentPane().setLayout(layout);
+        layout.setHorizontalGroup(
+            layout.createParallelGroup(org.jdesktop.layout.GroupLayout.LEADING)
+            .add(layout.createSequentialGroup()
+                .addContainerGap()
+                .add(generalTabbedPane, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, 600, Short.MAX_VALUE))
+//            .add(layout.createSequentialGroup()
+//                .add(170, 170, 170)
+//                .add(jPanel5, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE)
+//                .add(0, 0, Short.MAX_VALUE))
+        );
+        layout.setVerticalGroup(
+            layout.createParallelGroup(org.jdesktop.layout.GroupLayout.LEADING)
+            .add(layout.createSequentialGroup()
+                .add(generalTabbedPane, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, 359, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(org.jdesktop.layout.LayoutStyle.RELATED)
+               // .add(jPanel5, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap())
+        );
+        
+        javax.swing.GroupLayout editionTableLayout = new javax.swing.GroupLayout(editionTablePanel);
+        editionTablePanel.setLayout(editionTableLayout);
+        editionTableLayout.setHorizontalGroup(
+        	editionTableLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+        	.addGroup(editionTableLayout.createSequentialGroup()
+        		.addContainerGap()
+        		.addGroup(editionTableLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jScrollPane1, 300, 500, Short.MAX_VALUE)
+                    .addGroup(editionTableLayout.createSequentialGroup()
+                    	.addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(btnEdit)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE)
+                        .addComponent(btnUndo)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE)
+                        .addComponent(btnRedo)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE)
+                        .addComponent(btnNextPhase)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE)
+                        .addComponent(btnRun)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                .addGap(18, 18, 18)
+                .addGroup(editionTableLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(lblScore)
+                    .addGroup(editionTableLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                        .addComponent(btnBlockEdit, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(btnShowBlocked, javax.swing.GroupLayout.Alignment.TRAILING))
+                    .addComponent(chkOnlyPositiveEdits)
+                    .addComponent(chkOnlyAllowedEdits))
+                .addContainerGap())           
+        );
+        
+
+      editionTableLayout.setVerticalGroup(
+      editionTableLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+      .addGroup(editionTableLayout.createSequentialGroup()
+          .addContainerGap()
+          .addGroup(editionTableLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+              .addGroup(editionTableLayout.createSequentialGroup()
+                  .addComponent(chkOnlyAllowedEdits)
+                  .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                  .addComponent(chkOnlyPositiveEdits)
+                  .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                  .addComponent(btnBlockEdit)
+                  .addGap(8, 8, 8)
+                  .addComponent(btnShowBlocked))
+              .addComponent(jScrollPane1, 50, 155, Short.MAX_VALUE))
+          .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+          .addGroup(editionTableLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+              .addComponent(lblScore)
+              .addGroup(editionTableLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                  .addComponent(btnEdit)
+                  .addComponent(btnUndo)
+                  .addComponent(btnRedo)
+                  .addComponent(btnRun)
+                  .addComponent(btnNextPhase)))
+          .addContainerGap())
+  );
+      
+      XYDataset ds1 = createClassificationDataset();
+      XYDataset ds2 = createMetricDataset();
+      
+      JFreeChart chart = ChartFactory.createXYLineChart("Objective Function vs. Network Evolution",
+              "Change #", "Classification Rate", ds1, PlotOrientation.VERTICAL, true, true,
+              true);
+
+      XYPlot xyPlot = chart.getXYPlot();
+      NumberAxis domain = (NumberAxis) xyPlot.getDomainAxis();
+      domain.setTickUnit(new NumberTickUnit(1));
+//      domain.setVerticalTickLabels(false);
+//      NumberAxis range = (NumberAxis) xyPlot.getRangeAxis();
+//      range.setRange(0.00, 100.00);
+//      range.setTickUnit(new NumberTickUnit(10));
+//      chart.removeLegend();
+      
+
+      final NumberAxis axis2 = new NumberAxis("Objective Function Score");
+      axis2.setAutoRangeIncludesZero(false);
+
+      xyPlot.setRangeAxis(1, axis2);
+      xyPlot.setDataset(1, ds2);
+      xyPlot.mapDatasetToRangeAxis(1, 1);
+      final StandardXYItemRenderer renderer = new StandardXYItemRenderer();
+      renderer.setSeriesPaint(0, Color.black);
+//      renderer.setPlotShapes(true);
+//      renderer.setToolTipGenerator(StandardXYToolTipGenerator.getTimeSeriesInstance());
+      xyPlot.setRenderer(1, renderer);
+//      renderer.setToolTipGenerator(StandardXYToolTipGenerator.getTimeSeriesInstance());
+//      if (renderer instanceof StandardXYItemRenderer) {
+//          final StandardXYItemRenderer rr = (StandardXYItemRenderer) renderer;
+//          rr.setPlotShapes(true);
+//          rr.setShapesFilled(true);
+//      }
+//      
+      ChartPanel cp = new ChartPanel(chart);
+      
+      javax.swing.GroupLayout lookaheadLayout = new javax.swing.GroupLayout(lookaheadPanel);
+      lookaheadPanel.setLayout(lookaheadLayout);
+
+      lookaheadLayout.setHorizontalGroup(
+      	lookaheadLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+      	.addGroup(lookaheadLayout.createSequentialGroup()
+      		.addContainerGap()
+      		.addGroup(lookaheadLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                  .addComponent(cp, 300, 700, Short.MAX_VALUE)
+                  .addGroup(lookaheadLayout.createSequentialGroup()
+                  	.addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                      .addComponent(testThresholdPanel)
+                      .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE)
+                      .addComponent(testVariablePanel))
+//                      .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE)
+//                      .addComponent(btnRedo)
+//                      .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE)
+//                      .addComponent(btnNextPhase)
+//                      .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE)
+//                      .addComponent(btnRun)
+//                      .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+      				)
+//              .addGap(18, 18, 18)
+//              .addGroup(lookaheadLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+// 
+////                  .addGroup(lookaheadLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+////                      .addComponent(btnBlockEdit, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+////                      )
+//                  .addComponent(testThresholdPanel)
+//                  .addComponent(testVariablePanel)
+////                  .addComponent(objectiveFunctionsPanel)
+//                  )
+              .addContainerGap())           
+      );
+
+    lookaheadLayout.setVerticalGroup(
+    lookaheadLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+    .addGroup(lookaheadLayout.createSequentialGroup()
+        .addContainerGap()
+        .addGroup(lookaheadLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+//            .addGroup(lookaheadLayout.createSequentialGroup()
+////                .addComponent(objectiveFunctionsPanel)
+////                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+//                .addComponent(testVariablePanel)
+////                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+//                .addComponent(testThresholdPanel)
+//                .addGap(80, 80, 80)
+////                .addComponent(btnShowBlocked)
+//                )
+            .addComponent(cp, 50, 250, Short.MAX_VALUE))
+        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+        .addGroup(lookaheadLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+//            .addComponent(lblScore)
+            .addGroup(lookaheadLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                .addComponent(testVariablePanel)
+                .addComponent(testThresholdPanel)))
+//                .addComponent(btnRedo)
+//                .addComponent(btnRun)
+//                .addComponent(btnNextPhase)))
+        .addContainerGap()
+        )
+
+    		);   
+    
+      
+     generalTabbedPane.addTab("Objective Function", lookaheadPanel);
+     generalTabbedPane.addTab(stringDatabase.getString("Learning.General"), editionTablePanel); 
+     
+        pack();
+    }// </editor-fold>//GEN-END:initComponents
+
+    private XYDataset createClassificationDataset() {
+   	 
+    	XYSeriesCollection ds = new XYSeriesCollection();
+ 
+        ds.addSeries(classificationResultsHistory);      
+ 
+        return ds;
+    }
+    
+    private XYDataset createMetricDataset() {
+   	 
+    	XYSeriesCollection ds = new XYSeriesCollection();
+ 
+        ds.addSeries(metricHistory);   
+ 
+        return ds;
+    }
+    
+
+    
+    private void btnEditActionPerformed(java.awt.event.ActionEvent evt) {                                        
+		applySelected();
+    }                                       
+
+    private void btnUndoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEditActionPerformed
+		learningManager.getLearnedNet().getPNESupport().undo();
+    }//GEN-LAST:event_btnEditActionPerformed
+
+    private void chkOnlyAllowedEditsStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_chkOnlyAllowedEditsStateChanged
+    	if(onlyAllowed != chkOnlyAllowedEdits.isSelected())
+    	{
+    		onlyAllowed = chkOnlyAllowedEdits.isSelected();
+	        updateEditionsTable(onlyAllowed, onlyPositive, learningManager.getBlockedEdits());
+    	}
+    }//GEN-LAST:event_chkOnlyAllowedEditsStateChanged
+
+    private void chkOnlyPositiveEditsStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_chkOnlyPositiveEditsStateChanged
+    	if(onlyPositive != chkOnlyPositiveEdits.isSelected())
+    	{
+    		onlyPositive = chkOnlyPositiveEdits.isSelected();
+	        updateEditionsTable(onlyAllowed, onlyPositive, learningManager.getBlockedEdits());
+    	}
+    }//GEN-LAST:event_chkOnlyPositiveEditsStateChanged
+
+    private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing
+    }//GEN-LAST:event_formWindowClosing
+
+    private void btnRedoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnRedoActionPerformed
+		learningManager.getLearnedNet().getPNESupport().redo();
+    }//GEN-LAST:event_btnRedoActionPerformed
+
+    private void btnBlockEditActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnBlockEditActionPerformed
+		if(editionsTable.getSelectedEdit() != null)
+		{
+        	learningManager.blockEdit(editionsTable.getSelectedEdit());
+        	updateEditionsTable(onlyAllowed, onlyPositive, learningManager.getBlockedEdits());
+        }
+    }//GEN-LAST:event_btnBlockEditActionPerformed
+
+	private void btnShowBlockedActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnShowBlockedActionPerformed
+       	blockedEditDialog.setLocation(this.getX()+this.getWidth()-blockedEditDialog.getWidth(), this.getY()+this.getHeight());
+        blockedEditDialog.setVisible(true);
+    }//GEN-LAST:event_btnShowBlockedActionPerformed
+
+    private void btnRunActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnRunActionPerformed
+        try
+        {
+            learningManager.learn ();
+            this.setVisible (false);
+        }
+        catch (NormalizeNullVectorException e)
+        {
+            JOptionPane.showMessageDialog (null,
+                                           stringDatabase.getString ("Learning.Error")
+                                                   + ":" + e.getMessage (),
+                                                   stringDatabase.getString ("ErrorWindow.Title.Label"),
+                                           JOptionPane.ERROR_MESSAGE);
+            e.printStackTrace();
+        }
+    }//GEN-LAST:event_btnRunActionPerformed
+
+    private void btnNextPhaseActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnNextPhaseActionPerformed
+    	try
+        {
+    		learningManager.getLearnedNet ().getPNESupport ().removeUndoableEditListener (this);
+	    	learningManager.goToNextPhase ();
+	        updateEditionsTable (onlyAllowed, onlyPositive, learningManager.getBlockedEdits ());
+	        learningManager.getLearnedNet ().getPNESupport ().addUndoableEditListener (this);
+	        btnRedo.setEnabled(false);
+	        btnUndo.setEnabled(true);
+        }
+        catch (NormalizeNullVectorException e)
+        {
+            JOptionPane.showMessageDialog (null,
+                                           stringDatabase.getString ("Learning.Error")
+                                                   + ":" + e.getMessage (),
+                                                   stringDatabase.getString ("ErrorWindow.Title.Label"),
+                                           JOptionPane.ERROR_MESSAGE);
+            e.printStackTrace();
+        }
+    }//GEN-LAST:event_btnNextPhaseActionPerformed
+    
+	public void editionPerformed(EditionEvent editionEvent) {
+		applySelected();
+	}
+	
+	public void editionUnblocked(PNEdit edit)
+	{
+		learningManager.unblockEdit(edit);
+		updateEditionsTable(onlyAllowed, onlyPositive, learningManager.getBlockedEdits());
+		
+	}
+
+	private void applySelected()
+	{
+    	try
+    	{
+    		if(editionsTable.getSelectedEdit() != null)
+    		{
+    			learningManager.applyEdit (editionsTable.getSelectedEdit());
+    		}
+    		
+		} catch (Exception e) {
+            JOptionPane.showMessageDialog (null,
+                                           stringDatabase.getString ("Learning.Error")
+                                                   + ":" + e.getMessage (),
+                                                   stringDatabase.getString ("ErrorWindow.Title.Label"),
+                                           JOptionPane.ERROR_MESSAGE);
+			e.printStackTrace();
+		} 
+    	
+	}
+	
+	public void undoableEditHappened(UndoableEditEvent event) {
+        if(!(event.getEdit() instanceof MoveNodeEdit))
+        {
+        	if(learningManager.getLearnedNet().getLookAheadButton() == false) {
+        		updateEditionsTable(onlyAllowed, onlyPositive, learningManager.getBlockedEdits());
+        	}
+        }
+        if (!learningManager.getLearnedNet().getPNESupport().getUndoManager().canRedo())
+        	btnRedo.setEnabled(false);
+        btnUndo.setEnabled(true);
+
+		double metricScore = 0;
+		if (metricHistory.getItemCount() > 0) {
+			Number y = metricHistory.getY(metricHistory.getItemCount() - 1);
+			metricScore += y.doubleValue();
+		}	
+		PNEdit edit = (PNEdit) event.getEdit();
+		if (edit instanceof BaseLinkEdit) {
+			ScoreEditMotivation motivation = (ScoreEditMotivation) learningManager.getMotivation(edit);
+			metricScore += motivation.getScore();
+		}
+	
+		metricHistory.add(metricHistory.getItemCount(), metricScore);
+
+		ArrayList<EvidenceCase> evidence = learningPanel.getEditorPanel().getEvidence();
+		double classificationScore = 0;
+		try {
+			if (evidence.size() > 0) {
+				InferenceAlgorithm inferenceAlgorithm = learningPanel.getEditorPanel().getInferenceManager().getDefaultInferenceAlgorithm(learningManager.getLearnedNet());
+		        classificationScore = learningManager.getNetworkScore(inferenceAlgorithm, evidence, testVariable, testThreshold);
+		        classificationResultsHistory.add(classificationResultsHistory.getItemCount(), classificationScore);
+			}
+		} catch (NotEvaluableNetworkException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+	}
+
+	public void undoEditHappened(UndoableEditEvent event) {
+		if (learningManager.getLearnedNet().getLookAheadButton() == false) {
+			updateEditionsTable(onlyAllowed, onlyPositive, learningManager.getBlockedEdits());
+
+			btnRedo.setEnabled(true);
+			if (!learningManager.getLearnedNet().getPNESupport().getUndoManager().canUndo())
+				btnUndo.setEnabled(false);
+			if (classificationResultsHistory.getItemCount() > 0) {
+				Number x = classificationResultsHistory.getX(classificationResultsHistory.getItemCount() - 1);
+				classificationResultsHistory.remove(x);
+			}
+			if (metricHistory.getItemCount() > 0) {
+				Number x = metricHistory.getX(metricHistory.getItemCount() - 1);
+				metricHistory.remove(x);				
+			}
+		}
+	}
+	
+	public void undoableEditWillHappen(UndoableEditEvent event)
+			throws ConstraintViolationException, CanNotDoEditException,
+			NonProjectablePotentialException,
+			WrongCriterionException {
+	}
+	
+	private void updateEditionsTable(boolean onlyAllowed, boolean onlyPositive, List<PNEdit> blockedEdits) 
+	{
+		List<LearningEditProposal> showableEditProposals = new ArrayList<LearningEditProposal>();
+		List<LearningEditProposal> blockedEditProposals = new ArrayList<LearningEditProposal>();
+		
+		LearningEditProposal bestEdition = learningManager.getBestEdit(onlyAllowed, onlyPositive);
+		while(showableEditProposals.size() < SHOWING_EDIT_NUM && bestEdition!=null)
+		{
+			showableEditProposals.add(bestEdition);
+			bestEdition = learningManager.getNextEdit(onlyAllowed, onlyPositive);
+		}
+		
+		editionsTable.fill(showableEditProposals); 
+		try {
+			if (showableEditProposals.isEmpty ())
+				learningManager.getLearnedNet ().setNetworkType (BayesianNetworkType.getUniqueInstance ());
+		} catch (ConstraintViolationException e) {
+				e.printStackTrace ();
+		}
+		
+        if(blockedEditDialog != null)
+        {
+			for(PNEdit blockedEdit : blockedEdits)
+				blockedEditProposals.add(new LearningEditProposal(blockedEdit, learningManager.getMotivation(blockedEdit)));
+
+			blockedEditDialog.fill(blockedEditProposals);
+        }
+        
+        btnNextPhase.setEnabled (!showableEditProposals.isEmpty ());
+        btnRun.setEnabled (!showableEditProposals.isEmpty ());
+        btnEdit.setEnabled (!showableEditProposals.isEmpty ());
+	}
+	
+	//get jScrollPane1
+	public static JScrollPane getjPanel1() {
+
+			return jScrollPane1;
+	}
+	
+    // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton btnBlockEdit;
+    private javax.swing.JButton btnEdit;
+    private javax.swing.JButton btnNextPhase;
+    private javax.swing.JButton btnRedo;
+    private javax.swing.JButton btnRun;
+    private javax.swing.JButton btnShowBlocked;
+    private javax.swing.JButton btnUndo;
+    private javax.swing.JCheckBox chkOnlyAllowedEdits;
+    private javax.swing.JCheckBox chkOnlyPositiveEdits;
+    private javax.swing.JScrollPane jScrollPane2;
+    private static javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JTable jTable1;
+    private javax.swing.JLabel lblScore;
+    private javax.swing.JTabbedPane generalTabbedPane;
+    private javax.swing.JPanel editionTablePanel;
+    private javax.swing.JPanel lookaheadPanel;
+    // End of variables declaration//GEN-END:variables
+
+    private EditProposalTable editionsTable;
+	private LearningManager learningManager;
+	private boolean onlyAllowed = true, onlyPositive = true;
+    private BlockedEditDialog blockedEditDialog;
+    /**
+     * String database 
+     */
+    protected StringDatabase stringDatabase = StringDatabase.getUniqueInstance ();	    
+}
